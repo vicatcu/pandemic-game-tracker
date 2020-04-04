@@ -2,6 +2,8 @@ import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { AlertController } from '@ionic/angular';
 import { Storage } from '@ionic/storage';
 
+import {v4 as uuid } from 'uuid';
+
 @Component({
   selector: 'app-game',
   templateUrl: './game.component.html',
@@ -24,14 +26,18 @@ export class GameComponent implements OnInit {
     {name: 'Cairo', color: 'black', outbreaksTo: ['Tripoli', 'Istanbul'], extantCount: 0},
     {name: 'Istanbul', color: 'black', outbreaksTo: ['Cairo', 'Wuhan'], extantCount: 0}
   ].sort((a, b) => a.name < b.name ? -1 : +1 );
-  cities = JSON.parse(JSON.stringify(this.defaultCities));
-  nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
 
+  cities = JSON.parse(JSON.stringify(this.defaultCities)).map(v => {
+    v.uuid = uuid();
+    return v;
+  });
+  nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
+  nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
   selectedCityId;
   selectedInfectionId;
 
   topDeckHistory = [[]];
-
+  topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
   constructor(
     private alertCtrl: AlertController,
     private storage: Storage,
@@ -54,6 +60,7 @@ export class GameComponent implements OnInit {
     }
     topDeckCity.count++;
     await this.save();
+    this.detectChanges();
   }
 
   async nextRound() {
@@ -91,6 +98,7 @@ export class GameComponent implements OnInit {
       topDeckCity.count = 0;
     }
     await this.save();
+    this.detectChanges();
   }
 
   roundCount(round, city) {
@@ -125,6 +133,8 @@ export class GameComponent implements OnInit {
     }
     await this.save();
     this.detectChanges();
+
+    console.log(this.nonSafehavenCitiesLeadingBlank.find((v: any) => v.name === 'Washington'));
   }
 
   async removeInfectionCard() {
@@ -152,6 +162,7 @@ export class GameComponent implements OnInit {
     } catch (e) {
       this.topDeckHistory = [[]];
     }
+    this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
 
     try {
       const cities = await this.storage.get('cities');
@@ -163,6 +174,14 @@ export class GameComponent implements OnInit {
     } catch (e) {
       this.cities = JSON.parse(JSON.stringify(this.defaultCities));
     }
+
+    this.cities = this.cities.map(v => {
+      v.uuid = uuid();
+      return v;
+    });
+
+    this.nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
+    this.nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
   }
 
   detectChanges() {
@@ -171,5 +190,9 @@ export class GameComponent implements OnInit {
     } catch (e) {
 
     }
+  }
+
+  trackItem (index: number, city) {
+    return city.uuid;
   }
 }

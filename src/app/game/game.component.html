@@ -24,11 +24,13 @@
 
   <ion-row>
     <ion-grid class="data-table">
-      <ion-row *ngFor="let city of withLeadingBlank(nonSafehavenCities)" style="border-bottom: thin black solid;">
+      <!-- <ion-row>{{ nonSafehavenCitiesLeadingBlank | json }}</ion-row> -->
+
+      <ion-row *ngFor="let city of nonSafehavenCitiesLeadingBlank; trackBy: trackCity" style="border-bottom: thin black solid;">
 
         <!-- header row -->
         <ng-container *ngIf="city === ''">
-          <ion-col *ngFor="let round of withLeadingBlank(topDeckHistory); let i = index;" class="round-column table-row">
+          <ion-col *ngFor="let round of topDeckHistoryLeadingBlank; let i = index;" class="round-column table-row">
             <ng-container *ngIf="i === 1">
               <b *ngIf="i">Setup</b>
             </ng-container>
@@ -40,7 +42,7 @@
 
         <!-- city row -->
         <ng-container *ngIf="city !== ''">
-          <ion-col *ngFor="let round of withLeadingBlank(topDeckHistory); let i = index;" class="round-column">
+          <ion-col *ngFor="let round of topDeckHistoryLeadingBlank; let i = index;" class="round-column">
 
             <!-- first column -->
             <ng-container *ngIf="round === ''">
