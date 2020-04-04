@@ -1,4 +1,6 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { AlertController } from '@ionic/angular';
+import { Storage } from '@ionic/storage';
 
 @Component({
   selector: 'app-game',
@@ -7,40 +9,88 @@ import { Component, OnInit } from '@angular/core';
 })
 export class GameComponent implements OnInit {
 
-  cities = [
-    {name: 'Coronaville', color: 'safehaven', outbreaksTo: ['New York', 'Covid2020', 'Wuhan', 'London']},
-    {name: 'Wuhan', color: 'safehaven', outbreaksTo: ['Coronaville', 'Covid2020', 'Tripoli', 'Istanbul']},
-    {name: 'Covid2020', color: 'safehaven', outbreaksTo: ['Wuhan', 'Coronaville', 'Jacksonville', 'Sao Paulo', 'Lagos']},
-    {name: 'Chicago', color: 'blue', outbreaksTo: ['Washington']},
-    {name: 'New York', color: 'blue', outbreaksTo: ['Washington', 'Jacksonville', 'Coronaville']},
-    {name: 'Washington', color: 'blue', outbreaksTo: ['Jacksonville', 'New York']},
-    {name: 'Jacksonville', color: 'yellow', outbreaksTo: ['New York', 'Washington', 'Covid2020']},
-    {name: 'Sao Paulo', color: 'yellow', outbreaksTo: ['Lagos', 'Covid2020']},
-    {name: 'Lagos', color: 'yellow', outbreaksTo: ['Sao Paulo', 'Covid2020']},
-    {name: 'London', color: 'blue', outbreaksTo: ['Coronaville']},
-    {name: 'Tripoli', color: 'black', outbreaksTo: ['Cairo', 'Wuhan']},
-    {name: 'Cairo', color: 'black', outbreaksTo: ['Tripoli', 'Istanbul']},
-    {name: 'Istanbul', color: 'black', outbreaksTo: ['Cairo', 'Wuhan']}
+  defaultCities = [
+    {name: 'Coronaville', color: 'safehaven', outbreaksTo: ['New York', 'Covid2020', 'Wuhan', 'London'], extantCount: 0},
+    {name: 'Wuhan', color: 'safehaven', outbreaksTo: ['Coronaville', 'Covid2020', 'Tripoli', 'Istanbul'], extantCount: 0},
+    {name: 'Covid2020', color: 'safehaven', outbreaksTo: ['Wuhan', 'Coronaville', 'Jacksonville', 'Sao Paulo', 'Lagos'], extantCount: 0},
+    {name: 'Chicago', color: 'blue', outbreaksTo: ['Washington'], extantCount: 0},
+    {name: 'New York', color: 'blue', outbreaksTo: ['Washington', 'Jacksonville', 'Coronaville'], extantCount: 0},
+    {name: 'Washington', color: 'blue', outbreaksTo: ['Jacksonville', 'New York'], extantCount: 0},
+    {name: 'Jacksonville', color: 'yellow', outbreaksTo: ['New York', 'Washington', 'Covid2020'], extantCount: 0},
+    {name: 'Sao Paulo', color: 'yellow', outbreaksTo: ['Lagos', 'Covid2020'], extantCount: 0},
+    {name: 'Lagos', color: 'yellow', outbreaksTo: ['Sao Paulo', 'Covid2020'], extantCount: 0},
+    {name: 'London', color: 'blue', outbreaksTo: ['Coronaville'], extantCount: 0},
+    {name: 'Tripoli', color: 'black', outbreaksTo: ['Cairo', 'Wuhan'], extantCount: 0},
+    {name: 'Cairo', color: 'black', outbreaksTo: ['Tripoli', 'Istanbul'], extantCount: 0},
+    {name: 'Istanbul', color: 'black', outbreaksTo: ['Cairo', 'Wuhan'], extantCount: 0}
   ].sort((a, b) => a.name < b.name ? -1 : +1 );
-
+  cities = JSON.parse(JSON.stringify(this.defaultCities));
   nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
 
   selectedCityId;
+  selectedInfectionId;
 
   topDeckHistory = [[]];
 
-  constructor() {}
+  constructor(
+    private alertCtrl: AlertController,
+    private storage: Storage,
+    private cdr: ChangeDetectorRef
+  ) {
+    console.log(this.cities);
+    console.log(this.nonSafehavenCities);
+    console.log(this.topDeckHistory);
+    this.restore();
+  }
 
   ngOnInit() {}
 
-  infectCity() {
-    const topDeck: any = this.topDeckHistory.slice(-1);
+  async infectCity() {
+    const topDeck: any = this.topDeckHistory.slice(-1)[0]; // last array in topDeckHistory
     let topDeckCity = topDeck.find((v: any) => v.name === this.selectedCityId);
     if (!topDeckCity) {
       topDeckCity = {name: this.selectedCityId, count: 0};
       topDeck.push(topDeckCity);
     }
     topDeckCity.count++;
+    await this.save();
+  }
+
+  async nextRound() {
+    const alert = await this.alertCtrl.create({
+      header: 'Next Round',
+      message: 'Are you sure you want to start the next round?',
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: (blah) => {
+          }
+        }, {
+          text: 'OK',
+          handler: async () => {
+            this.topDeckHistory.push([]);
+            await this.save();
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async uninfectCity() {
+    const topDeck: any = this.topDeckHistory.slice(-1)[0]; // last array in topDeckHistory
+    let topDeckCity = topDeck.find((v: any) => v.name === this.selectedCityId);
+    if (!topDeckCity) {
+      topDeckCity = {name: this.selectedCityId, count: 0};
+      topDeck.push(topDeckCity);
+    }
+    topDeckCity.count--;
+    if (topDeckCity.count < 0) {
+      topDeckCity.count = 0;
+    }
+    await this.save();
   }
 
   roundCount(round, city) {
@@ -63,5 +113,63 @@ export class GameComponent implements OnInit {
 
   withLeadingBlank(array) {
     return [''].concat(array);
+  }
+
+  async addInfectionCard() {
+    const city = this.cities.find(v => v.name === this.selectedInfectionId);
+    if (city) {
+      if (!city.extantCount) {
+        city.extantCount = 0;
+      }
+      city.extantCount++;
+    }
+    await this.save();
+    this.detectChanges();
+  }
+
+  async removeInfectionCard() {
+    const city = this.cities.find(v => v.name === this.selectedInfectionId);
+    if (city && (city.extantCount > 0)) {
+      city.extantCount--;
+    }
+    await this.save();
+    this.detectChanges();
+  }
+
+  async save() {
+    await this.storage.set('topDeckHistory', this.topDeckHistory);
+    await this.storage.set('cities', this.cities);
+  }
+
+  async restore() {
+    try {
+      const topDeckHistory = await this.storage.get('topDeckHistory');
+      if (topDeckHistory) {
+        this.topDeckHistory = JSON.parse(JSON.stringify(topDeckHistory));
+      } else {
+        this.topDeckHistory = [[]];
+      }
+    } catch (e) {
+      this.topDeckHistory = [[]];
+    }
+
+    try {
+      const cities = await this.storage.get('cities');
+      if (cities) {
+        this.cities = JSON.parse(JSON.stringify(cities));
+      } else {
+        this.cities = JSON.parse(JSON.stringify(this.defaultCities));
+      }
+    } catch (e) {
+      this.cities = JSON.parse(JSON.stringify(this.defaultCities));
+    }
+  }
+
+  detectChanges() {
+    try {
+      this.cdr.detectChanges();
+    } catch (e) {
+
+    }
   }
 }

@@ -11,6 +11,7 @@ import { AppComponent } from './app.component'
 
 import { NgxElectronModule } from 'ngx-electron'
 import { GameComponentModule } from './game/game.module'
+import { IonicStorageModule } from '@ionic/storage';
 
 @NgModule({
   declarations: [AppComponent],
@@ -18,6 +19,7 @@ import { GameComponentModule } from './game/game.module'
   imports: [
     BrowserModule,
     IonicModule.forRoot(),
+    IonicStorageModule.forRoot(),
     AppRoutingModule,
     GameComponentModule,
     NgxElectronModule],

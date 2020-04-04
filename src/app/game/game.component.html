@@ -8,11 +8,16 @@
         [(ngModel)]="selectedCityId">
       </ng-select>
 
-      <ion-button class="select-line-button-tweak button-margin float-button"
+      <ion-button (click)="infectCity()" class="select-line-button-tweak button-margin float-button"
         expand="block" fill="outline" color="success">Infect City</ion-button>
 
-      <ion-button (click)="infectCity()" class="select-line-button-tweak button-margin float-button"
-        expand="block" fill="outline" color="danger">Epidemic</ion-button>
+      <ion-button (click)="uninfectCity()" class="select-line-button-tweak button-margin float-button"
+        expand="block" fill="outline" color="secondary">Uninfect City</ion-button>
+
+      <ion-button class="select-line-button-tweak button-margin float-button"
+        expand="block" fill="outline" color="danger" (click)="nextRound()">
+        {{ topDeckHistory.length === 1 ? 'Start Game' : 'Epidemic' }}
+      </ion-button>
     </div>
   </ion-row>
 
@@ -24,7 +29,12 @@
         <!-- header row -->
         <ng-container *ngIf="city === ''">
           <ion-col *ngFor="let round of withLeadingBlank(topDeckHistory); let i = index;" class="round-column table-row">
-            <b *ngIf="i">Round {{ i }}</b>
+            <ng-container *ngIf="i === 1">
+              <b *ngIf="i">Setup</b>
+            </ng-container>
+            <ng-container *ngIf="i !== 1">
+              <b *ngIf="i">Round {{ i - 1 }}</b>
+            </ng-container>
           </ion-col>
         </ng-container>
 
@@ -35,7 +45,8 @@
             <!-- first column -->
             <ng-container *ngIf="round === ''">
               <div class="table-first-column table-row-data" [style.background]="city.color" [style.color]="contrastColor(city.color)">
-                {{ city.name }}
+                <b>{{ city.name }} <span style="float: right;">({{ city.extantCount }})</span></b>
+                <!-- {{ city | json }} -->
               </div>
             </ng-container>
 
@@ -50,6 +61,22 @@
       </ion-row>
     </ion-grid>
   </ion-row>
+  <ion-row>
+    <ion-col>
+      <ng-select [items]="nonSafehavenCities"
+        class="city-selection"
+        bindLabel="name"
+        bindValue="name"
+        [(ngModel)]="selectedInfectionId">
+      </ng-select>
 
+      <ion-button (click)="addInfectionCard()" class="select-line-button-tweak button-margin float-button"
+        expand="block" fill="outline" color="success">Add City</ion-button>
+
+      <ion-button (click)="removeInfectionCard()" class="select-line-button-tweak button-margin float-button"
+        expand="block" fill="outline" color="secondary">Remove City</ion-button>
+
+    </ion-col>
+  </ion-row>
 </ion-grid>
 
