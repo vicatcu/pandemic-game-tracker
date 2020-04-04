@@ -1,0 +1,55 @@
+<ion-grid>
+  <ion-row>
+    <div class="flex-child">
+      <ng-select [items]="nonSafehavenCities"
+        class="city-selection"
+        bindLabel="name"
+        bindValue="name"
+        [(ngModel)]="selectedCityId">
+      </ng-select>
+
+      <ion-button class="select-line-button-tweak button-margin float-button"
+        expand="block" fill="outline" color="success">Infect City</ion-button>
+
+      <ion-button (click)="infectCity()" class="select-line-button-tweak button-margin float-button"
+        expand="block" fill="outline" color="danger">Epidemic</ion-button>
+    </div>
+  </ion-row>
+
+
+  <ion-row>
+    <ion-grid class="data-table">
+      <ion-row *ngFor="let city of withLeadingBlank(nonSafehavenCities)" style="border-bottom: thin black solid;">
+
+        <!-- header row -->
+        <ng-container *ngIf="city === ''">
+          <ion-col *ngFor="let round of withLeadingBlank(topDeckHistory); let i = index;" class="round-column table-row">
+            <b *ngIf="i">Round {{ i }}</b>
+          </ion-col>
+        </ng-container>
+
+        <!-- city row -->
+        <ng-container *ngIf="city !== ''">
+          <ion-col *ngFor="let round of withLeadingBlank(topDeckHistory); let i = index;" class="round-column">
+
+            <!-- first column -->
+            <ng-container *ngIf="round === ''">
+              <div class="table-first-column table-row-data" [style.background]="city.color" [style.color]="contrastColor(city.color)">
+                {{ city.name }}
+              </div>
+            </ng-container>
+
+            <!-- subsequent columns -->
+            <ng-container *ngIf="round !== ''">
+              <div class="table-row-data">
+                {{ roundCount(round, city) }}
+              </div>
+            </ng-container>
+          </ion-col>
+        </ng-container>
+      </ion-row>
+    </ion-grid>
+  </ion-row>
+
+</ion-grid>
+

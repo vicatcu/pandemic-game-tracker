@@ -10,11 +10,17 @@ import { AppRoutingModule } from './app-routing.module'
 import { AppComponent } from './app.component'
 
 import { NgxElectronModule } from 'ngx-electron'
+import { GameComponentModule } from './game/game.module'
 
 @NgModule({
   declarations: [AppComponent],
   entryComponents: [],
-  imports: [BrowserModule, IonicModule.forRoot(), AppRoutingModule, NgxElectronModule],
+  imports: [
+    BrowserModule,
+    IonicModule.forRoot(),
+    AppRoutingModule,
+    GameComponentModule,
+    NgxElectronModule],
   providers: [
     StatusBar,
     SplashScreen,

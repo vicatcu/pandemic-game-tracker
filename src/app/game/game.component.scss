@@ -1,0 +1,73 @@
+:host {
+  display: block;
+}
+
+.flex-container {
+  display: block;
+}
+
+.city-selection {
+  width:250px;
+  float: left;
+}
+
+.flex-child {
+  width: 100%;
+}
+
+.clear {
+  display: block;
+  clear: both;
+}
+
+.select-line-button-tweak {
+  position: relative;
+  top: -4px;
+}
+
+.button-margin {
+  width: 150px;
+  margin-left: 20px;
+}
+
+.float-button {
+  float: left;
+}
+
+.table-row {
+  padding: 10px;
+}
+
+.side-heading {
+  max-width: 150px!important;
+}
+
+.round-column {
+  max-width: 170px!important;
+  text-align: center;
+  display: table;
+}
+
+.card-count {
+  justify-content: center;
+}
+
+.table-first-column {
+  height: 100%;
+  width: 100px!important;
+  text-align: left;
+}
+
+.table-row-data {
+  height: 35px;
+  width: 100%;
+  display: table-cell;
+  vertical-align: middle;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.data-table {
+  max-width: 95%;
+  margin-left: 0;
+}
