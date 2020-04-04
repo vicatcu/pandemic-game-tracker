@@ -18,6 +18,11 @@
         expand="block" fill="outline" color="danger" (click)="nextRound()">
         {{ topDeckHistory.length === 1 ? 'Start Game' : 'Epidemic' }}
       </ion-button>
+
+      <ion-button class="select-line-button-tweak button-margin float-button"
+        expand="block" fill="outline" color="danger" (click)="resetGame()">
+        Reset Game
+      </ion-button>
     </div>
   </ion-row>
 

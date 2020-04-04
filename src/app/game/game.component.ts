@@ -78,6 +78,7 @@ export class GameComponent implements OnInit {
           text: 'OK',
           handler: async () => {
             this.topDeckHistory.push([]);
+            this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
             await this.save();
           }
         }
@@ -194,5 +195,11 @@ export class GameComponent implements OnInit {
 
   trackItem (index: number, city) {
     return city.uuid;
+  }
+
+  resetGame() {
+    this.topDeckHistory = [[]];
+    this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
+    this.save();
   }
 }
