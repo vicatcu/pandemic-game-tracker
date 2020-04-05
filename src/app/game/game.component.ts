@@ -252,11 +252,29 @@ export class GameComponent implements OnInit {
     return city.uuid;
   }
 
-  resetGame() {
-    this.topDeckHistory = [[]];
-    this.updateDerivedArrays();
-    this.recomputeBags('resetGame');
-    this.save();
+  async resetGame() {
+    const alert = await this.alertCtrl.create({
+      header: 'Reset Game',
+      message: `Are you sure you want Reset the game?`,
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: (blah) => {
+          }
+        }, {
+          text: 'Yes',
+          handler: async () => {
+            this.topDeckHistory = [[]];
+            this.updateDerivedArrays();
+            this.recomputeBags('resetGame');
+            this.save();
+          }
+        }
+      ]
+    });
+    await alert.present();
   }
 
   async newInfectionCard() {
