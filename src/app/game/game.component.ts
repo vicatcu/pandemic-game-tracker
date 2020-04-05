@@ -48,13 +48,15 @@ export class GameComponent implements OnInit {
     private storage: Storage,
     private cdr: ChangeDetectorRef
   ) {
+  }
+
+  async ngOnInit() {
+    await this.restore();
     console.log(this.cities);
     console.log(this.nonSafehavenCities);
     console.log(this.topDeckHistory);
-    this.restore();
+    this.recomputeBags('ngOnInit');
   }
-
-  ngOnInit() {}
 
   async infectCity(cityName = null) {
     cityName = cityName || this.selectedCityId;
@@ -65,6 +67,8 @@ export class GameComponent implements OnInit {
       topDeck.push(topDeckCity);
     }
     topDeckCity.count++;
+    this.recomputeBags('infectCity');
+
     await this.save();
     this.detectChanges();
   }
@@ -89,6 +93,7 @@ export class GameComponent implements OnInit {
               await this.infectCity();
               this.topDeckHistory.push([]);
               this.updateDerivedArrays();
+
               await this.save();
             }
           }
@@ -150,6 +155,8 @@ export class GameComponent implements OnInit {
     if (topDeckCity.count < 0) {
       topDeckCity.count = 0;
     }
+    this.recomputeBags('uninfectCity');
+
     await this.save();
     this.detectChanges();
   }
@@ -244,6 +251,7 @@ export class GameComponent implements OnInit {
   resetGame() {
     this.topDeckHistory = [[]];
     this.updateDerivedArrays();
+    this.recomputeBags('resetGame');
     this.save();
   }
 
@@ -366,15 +374,6 @@ export class GameComponent implements OnInit {
     this.nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
 
     this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
-
-    if (this.topDeckHistory.length === 1 && this.topDeckHistory[0].length === 0) {
-      this.partitionBags = this.cities.map(v => {
-        return {
-          name: v.name,
-          count: v.extantCount
-        }
-      });
-    }
   }
 
   totalCardsInDeck() {
@@ -396,4 +395,75 @@ export class GameComponent implements OnInit {
     }
     this.detectChanges();
   }
+
+  unbag(cityName) {
+    const bag = this.partitionBags[0];
+    const foundCityIdx = bag.findIndex(v => v.name === cityName);
+    if (foundCityIdx >= 0) {
+      const foundCity = bag[foundCityIdx];
+      foundCity.count--;
+      if (foundCity.count === 0) {
+        bag.splice(foundCityIdx, 1);
+      }
+
+      // if the whole bag is empty now remove it
+      if (bag.length === 0) {
+        this.partitionBags.shift();
+      }
+    }
+  }
+
+  rebag(cityName) {
+    const bag = this.partitionBags[0];
+    const foundCity = bag.find(v => v.name === cityName);
+    if (foundCity) {
+      foundCity.count++;
+    } else {
+      bag.push({
+        name: cityName,
+        count: 1
+      });
+    }
+  }
+
+  recomputeBags(caller = null) {
+    // console.log('Recompute Called By ', caller);
+    // initially it's one bag, consisting of the whole deck
+    this.partitionBags = [this.cities
+      .filter(v => v.color !== 'safehaven')
+      .map(v => {
+      return {
+        name: v.name,
+        count: v.extantCount
+      }
+    })];
+
+    // given the topDeckHistory, build the bags by unbagging and pushing
+    for (let ii = 0; ii < this.topDeckHistory.length; ii++) {
+      const round = this.topDeckHistory[ii];
+      const nextBag = [];
+      // console.log('Round: ' + (ii + 1));
+      for (let jj = 0; round && (jj < round.length); jj++) {
+        const card = round[jj];
+        // console.log('Card: ' + card.name);
+        for (let kk = 0; card && (kk < card.count); kk++) {
+          this.unbag(card.name);
+          const cityInNextBag = nextBag.find(v => v.name === card.name);
+          if (cityInNextBag) {
+            cityInNextBag.count++;
+          } else {
+            nextBag.push({
+              name: card.name,
+              count: 1
+            });
+          }
+        }
+      }
+      if (nextBag.length > 0) {
+        this.partitionBags.unshift(nextBag);
+      }
+    }
+    console.log(this.partitionBags);
+  }
+
 }
