@@ -38,6 +38,9 @@ export class GameComponent implements OnInit {
 
   topDeckHistory = [[]];
   topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
+
+  infectionRate = 2;
+
   constructor(
     private alertCtrl: AlertController,
     private storage: Storage,
@@ -51,11 +54,12 @@ export class GameComponent implements OnInit {
 
   ngOnInit() {}
 
-  async infectCity() {
+  async infectCity(cityName = null) {
+    cityName = cityName || this.selectedCityId;
     const topDeck: any = this.topDeckHistory.slice(-1)[0]; // last array in topDeckHistory
-    let topDeckCity = topDeck.find((v: any) => v.name === this.selectedCityId);
+    let topDeckCity = topDeck.find((v: any) => v.name === cityName);
     if (!topDeckCity) {
-      topDeckCity = {name: this.selectedCityId, count: 0};
+      topDeckCity = {name: cityName, count: 0};
       topDeck.push(topDeckCity);
     }
     topDeckCity.count++;
@@ -75,11 +79,16 @@ export class GameComponent implements OnInit {
           handler: (blah) => {
           }
         }, {
-          text: 'OK',
+          text: 'Yes',
           handler: async () => {
-            this.topDeckHistory.push([]);
-            this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
-            await this.save();
+            const whichCard = await this.whichCardWasDrawnFromBottom();
+            if (whichCard) {
+              this.selectedCityId = whichCard;
+              await this.infectCity();
+              this.topDeckHistory.push([]);
+              this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
+              await this.save();
+            }
           }
         }
       ]
@@ -87,11 +96,52 @@ export class GameComponent implements OnInit {
     await alert.present();
   }
 
-  async uninfectCity() {
+  async whichCardWasDrawnFromBottom() {
+    let resolver;
+    const ret = new Promise((r, j) => {
+      resolver = r;
+    });
+
+    const alert = await this.alertCtrl.create({
+      header: 'Epidemic!',
+      message: 'What was the epidemic card?',
+      inputs: [
+        {
+          type: 'text',
+          name: 'city',
+          placeholder: 'City name...'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: (blah) => {
+          }
+        }, {
+          text: 'OK',
+          handler: (data) => {
+
+            if (this.cities.find(v => v.name === data.city)) {
+              resolver(data.city);
+            } else {
+              return false;
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+    return ret;
+  }
+
+  async uninfectCity(cityName = null) {
+    cityName = cityName || this.selectedCityId;
     const topDeck: any = this.topDeckHistory.slice(-1)[0]; // last array in topDeckHistory
-    let topDeckCity = topDeck.find((v: any) => v.name === this.selectedCityId);
+    let topDeckCity = topDeck.find((v: any) => v.name === cityName);
     if (!topDeckCity) {
-      topDeckCity = {name: this.selectedCityId, count: 0};
+      topDeckCity = {name: cityName, count: 0};
       topDeck.push(topDeckCity);
     }
     topDeckCity.count--;
@@ -116,6 +166,7 @@ export class GameComponent implements OnInit {
       case 'yellow': return 'black';
       case 'blue': return 'white';
       case 'red': return 'white';
+      case 'purple': return 'white';
       default: return 'black';
     }
   }
@@ -124,8 +175,8 @@ export class GameComponent implements OnInit {
     return [''].concat(array);
   }
 
-  async addInfectionCard() {
-    const city = this.cities.find(v => v.name === this.selectedInfectionId);
+  async addInfectionCard(cityName = null) {
+    const city = this.cities.find(v => v.name === (cityName || this.selectedInfectionId));
     if (city) {
       if (!city.extantCount) {
         city.extantCount = 0;
@@ -134,12 +185,10 @@ export class GameComponent implements OnInit {
     }
     await this.save();
     this.detectChanges();
-
-    console.log(this.nonSafehavenCitiesLeadingBlank.find((v: any) => v.name === 'Washington'));
   }
 
-  async removeInfectionCard() {
-    const city = this.cities.find(v => v.name === this.selectedInfectionId);
+  async removeInfectionCard(cityName = null) {
+    const city = this.cities.find(v => v.name === (cityName || this.selectedInfectionId));
     if (city && (city.extantCount > 0)) {
       city.extantCount--;
     }
@@ -163,7 +212,6 @@ export class GameComponent implements OnInit {
     } catch (e) {
       this.topDeckHistory = [[]];
     }
-    this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
 
     try {
       const cities = await this.storage.get('cities');
@@ -176,13 +224,7 @@ export class GameComponent implements OnInit {
       this.cities = JSON.parse(JSON.stringify(this.defaultCities));
     }
 
-    this.cities = this.cities.map(v => {
-      v.uuid = uuid();
-      return v;
-    });
-
-    this.nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
-    this.nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
+    this.updateDerivedArrays();
   }
 
   detectChanges() {
@@ -201,5 +243,132 @@ export class GameComponent implements OnInit {
     this.topDeckHistory = [[]];
     this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
     this.save();
+  }
+
+  async newInfectionCard() {
+    const alert = await this.alertCtrl.create({
+      header: 'New City',
+      message: 'Define the new city and click Save',
+      inputs: [
+        {
+          name: 'name',
+          label: 'Name',
+          type: 'text',
+          placeholder: 'Enter city name...'
+        },
+        {
+          name: 'color',
+          label: 'Color',
+          type: 'text',
+          placeholder: 'red, yellow, black, blue, haven...'
+        },
+        {
+          name: 'outbreaksTo',
+          label: 'Outbreaks To',
+          type: 'text',
+          placeholder: 'comma separated list of names'
+        }
+      ],
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: (blah) => {
+          }
+        }, {
+          text: 'Save',
+          handler: async (data) => {
+            if (data.color) {
+              data.color = data.color.trim();
+            }
+            if (data.name) {
+              data.name = data.name.trim();
+            }
+            if (data.outbreaksTo) {
+              data.outbreaksTo = data.outbreaksTo.split(',').map(v => v.trim()).filter(v => !!v);
+            }
+            if (['red', 'black', 'blue', 'yellow', 'purple'].includes(data.color) && data.name) {
+              this.cities.push({
+                name: data.name,
+                color: data.color,
+                outbreaksTo: Array.isArray(data.outbreaksTo) ? data.outbreaksTo : [],
+                extantCount: 0,
+                uuid: uuid()
+              });
+
+              this.updateDerivedArrays();
+              await this.save();
+            }
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async deleteInfectionCard() {
+    const alert = await this.alertCtrl.create({
+      header: 'Delete City',
+      message: `Are you sure you want Delete the row for "${this.selectedInfectionId}"?`,
+      buttons: [
+        {
+          text: 'Cancel',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: (blah) => {
+          }
+        }, {
+          text: 'Yes',
+          handler: async () => {
+
+            this.cities = this.cities.filter(v => v.name !== this.selectedInfectionId);
+
+            this.updateDerivedArrays();
+            await this.save();
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  async unwoundYourself() {
+    const alert = await this.alertCtrl.create({
+      header: 'Unwound Yourself?',
+      buttons: [
+        {
+          text: 'No',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: (blah) => {
+          }
+        }, {
+          text: 'Yes',
+          handler: async () => {
+
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
+
+  sortCitiesByName(a, b) {
+    return a.name < b.name ? -1 : +1 ;
+  }
+
+  updateDerivedArrays() {
+    this.cities.sort(this.sortCitiesByName.bind(this));
+    this.nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
+    this.nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
+  }
+
+  updateInfectionRate(increment) {
+    this.infectionRate += increment;
+    if (this.infectionRate < 0) {
+      this.infectionRate = 0;
+    }
+    this.detectChanges();
   }
 }

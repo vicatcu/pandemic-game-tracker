@@ -1,5 +1,6 @@
 :host {
   display: block;
+  overflow-y: scroll;
 }
 
 .flex-container {
@@ -39,7 +40,8 @@
 }
 
 .side-heading {
-  max-width: 150px!important;
+  max-width: 350px!important;
+  font-size: 20px;
 }
 
 .round-column {
@@ -53,21 +55,92 @@
 }
 
 .table-first-column {
-  height: 100%;
-  width: 100px!important;
+  padding-left: 10px;
+  padding-right: 10px;
+
   text-align: left;
+  height: 45px;
+  line-height: 45px;
+  text-align: left!important;
+  position: relative;
+
+  span {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
+    padding-left: 10px;
+  }
+
+  .extant-count {
+    display: inline-block;
+    position: absolute;
+    right: 10px;
+  }
+
+  ion-button {
+    position: relative;
+    top: -6px;
+  }
 }
 
 .table-row-data {
-  height: 35px;
-  width: 100%;
-  display: table-cell;
-  vertical-align: middle;
   padding-left: 10px;
   padding-right: 10px;
+
+  text-align: left;
+  height: 45px;
+  line-height: 45px;
+  text-align: center;
+  span {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
+  }
 }
 
 .data-table {
   max-width: 95%;
   margin-left: 0;
+}
+
+.add-remove-button {
+  --padding-start: 0px;
+  --padding-end: 0px;
+}
+
+.white-button {
+  color: white;
+  --border-color: white;
+}
+
+.black-button {
+  color: black;
+  --border-color: black;
+}
+
+.infection-rate {
+  display: inline-block;
+  padding-left: 20px;
+  padding-right: 20px;
+
+  height: 23px;
+  line-height: 23px;
+  text-align: center;
+  position: relative;
+  top: -3px;
+
+  .label {
+    color: green;
+  }
+
+  span {
+    display: inline-block;
+    vertical-align: middle;
+    line-height: normal;
+    margin-left: 10px;
+    margin-right: 10px;
+    position: relative;
+    top: 5px;
+    font-size: 26px;
+  }
 }
