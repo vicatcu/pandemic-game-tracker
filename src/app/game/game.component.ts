@@ -66,7 +66,11 @@ export class GameComponent implements OnInit {
       topDeckCity = {name: cityName, count: 0};
       topDeck.push(topDeckCity);
     }
-    topDeckCity.count++;
+
+    if (topDeckCity.count < this.cities.find(v => v.name === topDeckCity.name).extantCount) {
+      topDeckCity.count++;
+    }
+
     this.recomputeBags('infectCity');
 
     await this.save();
