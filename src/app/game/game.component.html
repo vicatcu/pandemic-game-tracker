@@ -49,9 +49,9 @@
           <ion-col *ngFor="let round of topDeckHistoryLeadingBlank; let i = index;" class="table-row"  style="padding-bottom: 0px; padding-top: 0px;"
             [class.round-column]="i !== 0" [class.side-heading]="i === 0" [style.padding-left]="i === 0 ? '0px' : 'auto'" [style.padding-right]="i === 0 ? '0px' : 'auto'">
             <div *ngIf="i === 0" class="table-first-column table-row-data" style="padding-left: 0px; padding-right: 0px;">
-              <span style="font-size: 17px;"><b>Full Deck</b></span>
+              <span style="font-size: 17px;"><b>Full Deck ({{ totalCardsInDeck() }})</b></span>
               <div class="extant-count" style="padding-right: 0px; font-size: 17px;">
-                <span style="padding-right: 0px"><b>Discard</b></span>
+                <span style="padding-right: 0px"><b>Discard ({{ totalDiscardedInCurrentRound() }})</b></span>
               </div>
             </div>
             <div *ngIf="i !== 0" class="table-first-column table-row-data" style="text-align:center!important">
@@ -128,6 +128,13 @@
     <ion-col>
       <ion-button (click)="unwoundYourself()" class="select-line-button-tweak button-margin float-button"
         expand="block" fill="outline" color="success">Unwound</ion-button>
+    </ion-col>
+  </ion-row>
+  <ion-row>
+    <ion-col>
+      <pre>
+        {{ partitionBags | json}}
+      </pre>
     </ion-col>
   </ion-row>
 </ion-grid>

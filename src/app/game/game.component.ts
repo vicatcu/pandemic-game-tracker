@@ -39,6 +39,8 @@ export class GameComponent implements OnInit {
   topDeckHistory = [[]];
   topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
 
+  partitionBags = [];
+
   infectionRate = 2;
 
   constructor(
@@ -86,7 +88,7 @@ export class GameComponent implements OnInit {
               this.selectedCityId = whichCard;
               await this.infectCity();
               this.topDeckHistory.push([]);
-              this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
+              this.updateDerivedArrays();
               await this.save();
             }
           }
@@ -241,7 +243,7 @@ export class GameComponent implements OnInit {
 
   resetGame() {
     this.topDeckHistory = [[]];
-    this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
+    this.updateDerivedArrays();
     this.save();
   }
 
@@ -362,6 +364,29 @@ export class GameComponent implements OnInit {
     this.cities.sort(this.sortCitiesByName.bind(this));
     this.nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
     this.nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
+
+    this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
+
+    if (this.topDeckHistory.length === 1 && this.topDeckHistory[0].length === 0) {
+      this.partitionBags = this.cities.map(v => {
+        return {
+          name: v.name,
+          count: v.extantCount
+        }
+      });
+    }
+  }
+
+  totalCardsInDeck() {
+    return this.cities.reduce((t, v) => {
+      return t + v.extantCount;
+    }, 0);
+  }
+
+  totalDiscardedInCurrentRound() {
+    return this.topDeckHistory.slice(-1)[0].reduce((t, v) => {
+      return t + v.count;
+    }, 0);
   }
 
   updateInfectionRate(increment) {
