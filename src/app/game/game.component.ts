@@ -27,6 +27,8 @@ export class GameComponent implements OnInit {
     {name: 'Istanbul', color: 'black', outbreaksTo: ['Cairo', 'Wuhan'], extantCount: 0}
   ].sort((a, b) => a.name < b.name ? -1 : +1 );
 
+  integers = new Array(10);
+
   cities = JSON.parse(JSON.stringify(this.defaultCities)).map(v => {
     v.uuid = uuid();
     return v;
@@ -40,8 +42,8 @@ export class GameComponent implements OnInit {
   topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
 
   partitionBags = [];
-
   infectionRate = 2;
+  handledEpidemic = true;
 
   constructor(
     private alertCtrl: AlertController,
@@ -69,6 +71,7 @@ export class GameComponent implements OnInit {
 
     if (topDeckCity.count < this.cities.find(v => v.name === topDeckCity.name).extantCount) {
       topDeckCity.count++;
+      this.handledEpidemic = true;
     }
 
     this.recomputeBags('infectCity');
@@ -97,6 +100,7 @@ export class GameComponent implements OnInit {
               await this.infectCity();
               this.topDeckHistory.push([]);
               this.updateDerivedArrays();
+              this.handledEpidemic = false;
 
               await this.save();
             }
@@ -196,6 +200,7 @@ export class GameComponent implements OnInit {
       }
       city.extantCount++;
     }
+    this.recomputeBags();
     await this.save();
     this.detectChanges();
   }
@@ -330,6 +335,7 @@ export class GameComponent implements OnInit {
               });
 
               this.updateDerivedArrays();
+              this.recomputeBags();
               await this.save();
             }
           }
@@ -357,6 +363,7 @@ export class GameComponent implements OnInit {
             this.cities = this.cities.filter(v => v.name !== this.selectedInfectionId);
 
             this.updateDerivedArrays();
+            this.recomputeBags();
             await this.save();
           }
         }
@@ -488,4 +495,38 @@ export class GameComponent implements OnInit {
     console.log(this.partitionBags);
   }
 
+  // is it possible that this city experience numInfections within numTurns
+  // and if it's possible what is the probability that it happens
+  cityIsWithinInfectionHorizon(cityName, numTurns, numInfections) {
+    let totalReachableCards = 0;
+    const totalInfectedCardsInTurns = this.infectionRate * numTurns;
+    let numPossibleInfections = 0;
+    for (let ii = 0; ii < this.partitionBags.length; ii++) {
+      if (!this.handledEpidemic && (ii === 0)) {
+        // the 'top' bag is the discard pile and should be ignored
+        // except if you have _not_ yet handled the epidemic yet
+        continue;
+      }
+
+      const bag = this.partitionBags[ii];
+      const cardsInBag = bag.reduce((t, v) => {
+        return t + v.count;
+      }, 0);
+
+      const bagCity = bag.find(v => v.name === cityName);
+      numPossibleInfections += bagCity ? bag.length : 0;
+      numPossibleInfections = Math.min(numPossibleInfections, totalInfectedCardsInTurns);
+
+      totalReachableCards += cardsInBag;
+      if (totalReachableCards >= totalInfectedCardsInTurns) {
+        break;
+      }
+    }
+
+    // this is the answer to is it possible, more math is need to find out what the likelihood is
+    if (numPossibleInfections >= numInfections) {
+      return 1;
+    }
+    return 0;
+  }
 }

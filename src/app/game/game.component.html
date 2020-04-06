@@ -98,6 +98,17 @@
               </div>
             </ng-container>
           </ion-col>
+          <ion-col>
+            <div class="table-row-data">
+                <ng-container *ngFor="let num of integers; let i = index;">
+                  <span *ngIf="i < city.extantCount"> {{ cityIsWithinInfectionHorizon(city.name, 1, i + 1) }}</span>
+                </ng-container>
+                <span> | </span>
+                <ng-container *ngFor="let num of integers; let i = index;">
+                  <span *ngIf="i < city.extantCount"> {{ cityIsWithinInfectionHorizon(city.name, 2, i + 1) }}</span>
+                </ng-container>
+            </div>
+          </ion-col>
         </ng-container>
       </ion-row>
     </ion-grid>
@@ -135,6 +146,7 @@
   <ion-row>
     <ion-col>
       <pre>{{ partitionBags | json}}</pre>
+      <!-- <pre>{{ handledEpidemic }} </pre> -->
     </ion-col>
   </ion-row>
 </ion-grid>
