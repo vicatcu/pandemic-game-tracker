@@ -92,7 +92,6 @@ export class GameComponent implements OnInit {
       const numExtantCards = this.cities.find(v => v.name === topDeckCity.name).extantCount;
       if (topDeckCity.count < numExtantCards)  {
         topDeckCity.count++;
-        this.handledEpidemic = true;
         infectWorked = true;
       }
     }
@@ -105,9 +104,30 @@ export class GameComponent implements OnInit {
   }
 
   async nextRound() {
+    if (!this.handledEpidemic) {
+      this.handledEpidemic = true;
+      const prompt = await this.alertCtrl.create({
+        header: 'Epidemic Complete',
+        message: 'Continue game...',
+      });
+      await prompt.present();
+      setTimeout(async () => {
+        await prompt.dismiss();
+      }, 1000);
+      return;
+    }
+
     const alert = await this.alertCtrl.create({
       header: 'Next Round',
       message: 'Are you sure you want to start the next round?',
+      inputs: [
+        {
+          name: 'increaseInfectionRate',
+          type: 'checkbox',
+          label: `+ Infection Rate to ${this.infectionRate + 1}?`,
+          value: true
+        }
+      ],
       buttons: [
         {
           text: 'Cancel',
@@ -117,19 +137,21 @@ export class GameComponent implements OnInit {
           }
         }, {
           text: 'Yes',
-          handler: async () => {
+          handler: async (data) => {
             const whichCard = await this.whichCardWasDrawnFromBottom();
             if (whichCard) {
               this.selectedCityId = whichCard;
               const worked = await this.infectCity(null, true);
               if (worked) {
+                if (data[0]) {
+                  this.infectionRate++;
+                }
+                this.handledEpidemic = false;
                 this.topDeckHistory.push([]);
                 this.updateDerivedArrays();
-                this.handledEpidemic = false;
                 this.atLeastOneEpidemic = true;
                 await this.save();
               } else {
-                this.handledEpidemic = true;
                 return false;
               }
             }
