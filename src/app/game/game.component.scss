@@ -45,7 +45,7 @@
 }
 
 .round-column {
-  max-width: 170px!important;
+  max-width: 115px!important;
   text-align: center;
   display: table;
 }
@@ -143,4 +143,21 @@
     top: 5px;
     font-size: 26px;
   }
+}
+
+.radio-ball {
+  font-size: 35px;
+  margin-left: 10px;
+}
+
+.red {
+  color: red;
+}
+
+.yellow {
+  color: yellow;
+}
+
+.black {
+  color: black;
 }

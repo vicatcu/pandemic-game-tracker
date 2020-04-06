@@ -15,6 +15,7 @@
         expand="block" fill="outline" color="secondary">Uninfect City</ion-button> -->
 
       <ion-button class="select-line-button-tweak button-margin float-button"
+        [disabled]="!handledEpidemic"
         expand="block" fill="outline" color="danger" (click)="nextRound()">
         Epidemic
       </ion-button>
@@ -46,7 +47,7 @@
 
         <!-- header row -->
         <ng-container *ngIf="city === ''">
-          <ion-col *ngFor="let round of topDeckHistoryLeadingBlank; let i = index;" class="table-row"  style="padding-bottom: 0px; padding-top: 0px;"
+          <ion-col *ngFor="let round of topDeckHistoryLeadingBlank; let i = index;" class="table-row" style="padding-bottom: 0px; padding-top: 0px;"
             [class.round-column]="i !== 0" [class.side-heading]="i === 0" [style.padding-left]="i === 0 ? '0px' : 'auto'" [style.padding-right]="i === 0 ? '0px' : 'auto'">
             <div *ngIf="i === 0" class="table-first-column table-row-data" style="padding-left: 0px; padding-right: 0px;">
               <span style="font-size: 17px;"><b>Full Deck ({{ totalCardsInDeck() }})</b></span>
@@ -56,6 +57,11 @@
             </div>
             <div *ngIf="i !== 0" class="table-first-column table-row-data" style="text-align:center!important">
               <span><b>Round {{ i }}</b></span>
+            </div>
+          </ion-col>
+          <ion-col class="table-row" style="padding-bottom: 0px; padding-top: 0px;">
+            <div class="table-first-column table-row-data" style="text-align:left!important">
+              <span><b>Risk Assessment</b></span>
             </div>
           </ion-col>
         </ng-container>
@@ -99,14 +105,23 @@
             </ng-container>
           </ion-col>
           <ion-col>
-            <div class="table-row-data">
-                <ng-container *ngFor="let num of integers; let i = index;">
+            <div class="table-row-data" style="text-align: left;">
+                <!-- <ng-container *ngFor="let num of integers; let i = index;">
                   <span *ngIf="i < city.extantCount"> {{ cityIsWithinInfectionHorizon(city.name, 1, i + 1) }}</span>
                 </ng-container>
                 <span> | </span>
                 <ng-container *ngFor="let num of integers; let i = index;">
                   <span *ngIf="i < city.extantCount"> {{ cityIsWithinInfectionHorizon(city.name, 2, i + 1) }}</span>
-                </ng-container>
+                </ng-container> -->
+                <span>
+                  <ng-container *ngFor="let num of integers; let i = index;">
+                    <ion-icon class="radio-ball" *ngIf="i < city.extantCount"
+                      [class.red]="cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 1"
+                      [class.yellow]="cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 0 && cityIsWithinInfectionHorizon(city.name, 2, i + 1) === 1"
+                      [class.black]="cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 0 && cityIsWithinInfectionHorizon(city.name, 2, i + 1) === 0"
+                      [name]="(cityIsWithinInfectionHorizon(city.name, 2, i + 1) === 0 && cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 0) ? 'radio-button-off' : 'radio-button-on'"></ion-icon>
+                  </ng-container>
+                </span>
             </div>
           </ion-col>
         </ng-container>

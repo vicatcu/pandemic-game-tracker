@@ -44,6 +44,7 @@ export class GameComponent implements OnInit {
   partitionBags = [];
   infectionRate = 2;
   handledEpidemic = true;
+  atLeastOneEpidemic = false;
 
   constructor(
     private alertCtrl: AlertController,
@@ -60,7 +61,8 @@ export class GameComponent implements OnInit {
     this.recomputeBags('ngOnInit');
   }
 
-  async infectCity(cityName = null) {
+  async infectCity(cityName = null, isEpidemic = false) {
+    let infectWorked = false;
     cityName = cityName || this.selectedCityId;
     const topDeck: any = this.topDeckHistory.slice(-1)[0]; // last array in topDeckHistory
     let topDeckCity = topDeck.find((v: any) => v.name === cityName);
@@ -69,15 +71,37 @@ export class GameComponent implements OnInit {
       topDeck.push(topDeckCity);
     }
 
-    if (topDeckCity.count < this.cities.find(v => v.name === topDeckCity.name).extantCount) {
-      topDeckCity.count++;
-      this.handledEpidemic = true;
+    let sourceIsConsistent = false;
+    if (!isEpidemic) {
+      // in order to infect it, it has to be in the top deck, and there must be at least one of it
+      const topBagCard = (this.partitionBags[1] || this.partitionBags[0]).find(v => v.name === topDeckCity.name);
+      if (topBagCard && topBagCard.count > 0) {
+        sourceIsConsistent = true;
+      }
+    } else {
+      // if it is an epidemic, the named card must be in the bottommost stack
+      const bottomBagCard = this.partitionBags.slice(-1)[0].find(v => v.name === topDeckCity.name);
+      if (bottomBagCard && bottomBagCard.count > 0) {
+        // if it's there, we can remove it from that stack, and add one to the top deck
+        sourceIsConsistent = true;
+      }
+    }
+
+    if (sourceIsConsistent) {
+      // check that doing this won't violate the consistence of extantCards
+      const numExtantCards = this.cities.find(v => v.name === topDeckCity.name).extantCount;
+      if (topDeckCity.count < numExtantCards)  {
+        topDeckCity.count++;
+        this.handledEpidemic = true;
+        infectWorked = true;
+      }
     }
 
     this.recomputeBags('infectCity');
 
     await this.save();
     this.detectChanges();
+    return infectWorked;
   }
 
   async nextRound() {
@@ -97,12 +121,17 @@ export class GameComponent implements OnInit {
             const whichCard = await this.whichCardWasDrawnFromBottom();
             if (whichCard) {
               this.selectedCityId = whichCard;
-              await this.infectCity();
-              this.topDeckHistory.push([]);
-              this.updateDerivedArrays();
-              this.handledEpidemic = false;
-
-              await this.save();
+              const worked = await this.infectCity(null, true);
+              if (worked) {
+                this.topDeckHistory.push([]);
+                this.updateDerivedArrays();
+                this.handledEpidemic = false;
+                this.atLeastOneEpidemic = true;
+                await this.save();
+              } else {
+                this.handledEpidemic = true;
+                return false;
+              }
             }
           }
         }
@@ -272,6 +301,9 @@ export class GameComponent implements OnInit {
           text: 'Yes',
           handler: async () => {
             this.topDeckHistory = [[]];
+            this.infectionRate = 2;
+            this.handledEpidemic = true;
+            this.atLeastOneEpidemic = false;
             this.updateDerivedArrays();
             this.recomputeBags('resetGame');
             this.save();
@@ -501,10 +533,23 @@ export class GameComponent implements OnInit {
     let totalReachableCards = 0;
     const totalInfectedCardsInTurns = this.infectionRate * numTurns;
     let numPossibleInfections = 0;
+    const debugCity = '';
+    if (cityName === debugCity) {
+      console.log(`Num Turns: ${numTurns},  Num Infections: ${numInfections}`);
+    }
+
     for (let ii = 0; ii < this.partitionBags.length; ii++) {
-      if (!this.handledEpidemic && (ii === 0)) {
+      if (cityName === debugCity) {
+        console.log(`ii = ${ii}, handledEpidemic = ${this.handledEpidemic}`);
+      }
+
+      if (this.handledEpidemic && (ii === 0)) {
         // the 'top' bag is the discard pile and should be ignored
-        // except if you have _not_ yet handled the epidemic yet
+        // except if you have _not_ yet handled the epidemic
+        if (cityName === debugCity) {
+          console.log(`Skipping Bag 0 because handleEpidemic = ${this.handledEpidemic}`);
+        }
+
         continue;
       }
 
@@ -514,16 +559,34 @@ export class GameComponent implements OnInit {
       }, 0);
 
       const bagCity = bag.find(v => v.name === cityName);
-      numPossibleInfections += bagCity ? bag.length : 0;
+
+      if (cityName === debugCity) {
+        console.log(`Found in Bag: `, bagCity);
+      }
+
+      numPossibleInfections += (bagCity ? bagCity.count : 0);
       numPossibleInfections = Math.min(numPossibleInfections, totalInfectedCardsInTurns);
 
       totalReachableCards += cardsInBag;
+
+      if (cityName === debugCity) {
+        console.log(`After Considering Bag ${ii}, Total Reachable Cards: ${totalReachableCards} and Total Infected Cards In Turns ${totalInfectedCardsInTurns}`);
+      }
+
       if (totalReachableCards >= totalInfectedCardsInTurns) {
+        if (cityName === debugCity) {
+          console.log(`Analysis Complete`);
+        }
         break;
       }
     }
 
     // this is the answer to is it possible, more math is need to find out what the likelihood is
+
+    if (cityName === debugCity) {
+      console.log(`Num Possible Infections: ${numPossibleInfections}`);
+    }
+
     if (numPossibleInfections >= numInfections) {
       return 1;
     }
