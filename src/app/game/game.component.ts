@@ -45,6 +45,7 @@ export class GameComponent implements OnInit {
   infectionRate = 2;
   handledEpidemic = true;
   atLeastOneEpidemic = false;
+  unwoundedRounds = [];
 
   constructor(
     private alertCtrl: AlertController,
@@ -74,25 +75,55 @@ export class GameComponent implements OnInit {
     let sourceIsConsistent = false;
     if (!isEpidemic) {
       // in order to infect it, it has to be in the top deck, and there must be at least one of it
-      const topBagCard = (this.partitionBags[1] || this.partitionBags[0]).find(v => v.name === topDeckCity.name);
+      // if you're in an epidemic and there are no cards infected in the current round
+      // the discard pile is bag[0], otherwise it's the second bag if there are more than one bag
+      // and the only bag otherwise
+      let partitionBag;
+      const numCardsInDiscardPile = this.topDeckHistory.slice(-1)[0].reduce((t, v) => {
+        return t + v.count;
+      }, 0);
+      if (numCardsInDiscardPile === 0 && !this.handledEpidemic) {
+        partitionBag = this.partitionBags[0];
+      } else if (this.partitionBags[1] && this.partitionBags[1].length > 0) {
+        partitionBag = this.partitionBags[1];
+      } else {
+        partitionBag = this.partitionBags[0];
+      }
+
+      const topBagCard = partitionBag.find(v => v.name === topDeckCity.name);
       if (topBagCard && topBagCard.count > 0) {
         sourceIsConsistent = true;
+        if (!this.handledEpidemic) {
+          // you can't draw cards if the infection rate is >= the cards in the top bag
+          if (numCardsInDiscardPile >= this.infectionRate) {
+            sourceIsConsistent = false;
+          }
+        }
+      }
+
+      if (sourceIsConsistent) {
+        // check that doing this won't violate the consistence of extantCards
+        const numExtantCards = this.cities.find(v => v.name === topDeckCity.name).extantCount;
+        if (topDeckCity.count < numExtantCards)  {
+          topDeckCity.count++;
+          infectWorked = true;
+        }
       }
     } else {
-      // if it is an epidemic, the named card must be in the bottommost stack
+      // if it is an epidemic, the named card must be in the bottom-most stack
       const bottomBagCard = this.partitionBags.slice(-1)[0].find(v => v.name === topDeckCity.name);
       if (bottomBagCard && bottomBagCard.count > 0) {
         // if it's there, we can remove it from that stack, and add one to the top deck
         sourceIsConsistent = true;
       }
-    }
 
-    if (sourceIsConsistent) {
-      // check that doing this won't violate the consistence of extantCards
-      const numExtantCards = this.cities.find(v => v.name === topDeckCity.name).extantCount;
-      if (topDeckCity.count < numExtantCards)  {
-        topDeckCity.count++;
-        infectWorked = true;
+      if (sourceIsConsistent) {
+        // check that doing this won't violate the consistence of extantCards
+        const numExtantCards = this.cities.find(v => v.name === topDeckCity.name).extantCount;
+        if (topDeckCity.count < numExtantCards)  {
+          topDeckCity.count++;
+          infectWorked = true;
+        }
       }
     }
 
@@ -251,7 +282,7 @@ export class GameComponent implements OnInit {
       }
       city.extantCount++;
     }
-    this.recomputeBags();
+    this.recomputeBags('addInfectionCard');
     await this.save();
     this.detectChanges();
   }
@@ -389,7 +420,7 @@ export class GameComponent implements OnInit {
               });
 
               this.updateDerivedArrays();
-              this.recomputeBags();
+              this.recomputeBags('newInfectionCard');
               await this.save();
             }
           }
@@ -417,7 +448,7 @@ export class GameComponent implements OnInit {
             this.cities = this.cities.filter(v => v.name !== this.selectedInfectionId);
 
             this.updateDerivedArrays();
-            this.recomputeBags();
+            this.recomputeBags('deleteInfectionCard');
             await this.save();
           }
         }
@@ -439,7 +470,46 @@ export class GameComponent implements OnInit {
         }, {
           text: 'Yes',
           handler: async () => {
+            const lastRound = this.topDeckHistory.pop();
+            if (lastRound) {
+              this.unwoundedRounds.push(lastRound);
+            }
+            if (this.topDeckHistory.length === 0) {
+              this.topDeckHistory.push([]);
+            }
+            await this.updateDerivedArrays();
+            await this.recomputeBags('unwoundYourself');
+            await this.save();
+            this.detectChanges();
+          }
+        }
+      ]
+    });
+    await alert.present();
+  }
 
+  async rewoundYourself() {
+    const alert = await this.alertCtrl.create({
+      header: 'Rewound Yourself?',
+      buttons: [
+        {
+          text: 'No',
+          role: 'cancel',
+          cssClass: 'secondary',
+          handler: (blah) => {
+          }
+        }, {
+          text: 'Yes',
+          handler: async () => {
+            const lastUnwound = this.unwoundedRounds.pop();
+            if (lastUnwound) {
+              this.topDeckHistory.push(lastUnwound);
+            }
+            await this.updateDerivedArrays();
+            await this.recomputeBags('rewoundYourself');
+
+            await this.save();
+            this.detectChanges();
           }
         }
       ]
