@@ -4,8 +4,6 @@ import { Storage } from '@ionic/storage';
 
 import {v4 as uuid } from 'uuid';
 
-// TODO: Implement Show / Hide Round Discard Detail
-// TODO: Implement Sort By A then B
 // TODO: Implement Risk Statistics
 // TODO: Make City Display support multiple columns
 
@@ -53,6 +51,22 @@ export class GameComponent implements OnInit {
   unwoundedRounds = [];
 
   hideRoundColumns = true;
+  sortCriteria = [
+    { value: 'name', label: 'City Name'},
+    { value: 'color', label: 'City Color'},
+    { value: 'balls', label: 'Num Balls'},
+    { value: 'redballs', label: 'Red Balls'},
+    { value: 'yellowballs', label: 'Yellow Balls'},
+  ];
+  ascendingDescending = [
+    { value: 'ascending', label: '↑'},
+    { value: 'descending', label: '↓'}
+  ];
+
+  sortCriteria1 = 'name';
+  ascDesc1 = 'ascending';
+  sortCriteria2 = '';
+  ascDesc2 = 'ascending';
 
   constructor(
     private alertCtrl: AlertController,
@@ -67,6 +81,7 @@ export class GameComponent implements OnInit {
     console.log(this.nonSafehavenCities);
     console.log(this.topDeckHistory);
     this.recomputeBags('ngOnInit');
+    this.updateDerivedArrays();
   }
 
   async infectCity(cityName = null, isEpidemic = false) {
@@ -135,6 +150,7 @@ export class GameComponent implements OnInit {
     }
 
     this.recomputeBags('infectCity');
+    await this.updateDerivedArrays();
 
     await this.save();
     this.detectChanges();
@@ -186,7 +202,7 @@ export class GameComponent implements OnInit {
                 }
                 this.handledEpidemic = false;
                 this.topDeckHistory.push([]);
-                this.updateDerivedArrays();
+                await this.updateDerivedArrays();
                 this.atLeastOneEpidemic = true;
                 await this.save();
               } else {
@@ -252,7 +268,9 @@ export class GameComponent implements OnInit {
     if (topDeckCity.count < 0) {
       topDeckCity.count = 0;
     }
+
     this.recomputeBags('uninfectCity');
+    await this.updateDerivedArrays();
 
     await this.save();
     this.detectChanges();
@@ -290,6 +308,8 @@ export class GameComponent implements OnInit {
       city.extantCount++;
     }
     this.recomputeBags('addInfectionCard');
+    this.updateDerivedArrays();
+
     await this.save();
     this.detectChanges();
   }
@@ -331,7 +351,7 @@ export class GameComponent implements OnInit {
       this.cities = JSON.parse(JSON.stringify(this.defaultCities));
     }
 
-    this.updateDerivedArrays();
+    await this.updateDerivedArrays();
   }
 
   detectChanges() {
@@ -364,8 +384,8 @@ export class GameComponent implements OnInit {
             this.infectionRate = 2;
             this.handledEpidemic = true;
             this.atLeastOneEpidemic = false;
-            this.updateDerivedArrays();
             this.recomputeBags('resetGame');
+            await this.updateDerivedArrays();
             this.save();
           }
         }
@@ -426,8 +446,8 @@ export class GameComponent implements OnInit {
                 uuid: uuid()
               });
 
-              this.updateDerivedArrays();
               this.recomputeBags('newInfectionCard');
+              await this.updateDerivedArrays();
               await this.save();
             }
           }
@@ -457,13 +477,13 @@ export class GameComponent implements OnInit {
           }
         }, {
           text: 'Yes',
-          handler: (data) => {
+          handler: async (data) => {
             const cityIsValid = this.cities.find(v => v.name === data.cityName);
             if (cityIsValid) {
               this.cities = this.cities.filter(v => v.name !== data.cityName);
 
-              this.updateDerivedArrays();
               this.recomputeBags('deleteInfectionCard');
+              await this.updateDerivedArrays();
               this.save();
               return true;
             } else {
@@ -496,8 +516,8 @@ export class GameComponent implements OnInit {
             if (this.topDeckHistory.length === 0) {
               this.topDeckHistory.push([]);
             }
-            await this.updateDerivedArrays();
             await this.recomputeBags('unwoundYourself');
+            await this.updateDerivedArrays();
             await this.save();
             this.detectChanges();
           }
@@ -524,8 +544,8 @@ export class GameComponent implements OnInit {
             if (lastUnwound) {
               this.topDeckHistory.push(lastUnwound);
             }
-            await this.updateDerivedArrays();
             await this.recomputeBags('rewoundYourself');
+            await this.updateDerivedArrays();
 
             await this.save();
             this.detectChanges();
@@ -537,11 +557,115 @@ export class GameComponent implements OnInit {
   }
 
   sortCitiesByName(a, b) {
-    return a.name < b.name ? -1 : +1 ;
+    return a.name < b.name ? -1 : +1;
   }
 
-  updateDerivedArrays() {
-    this.cities.sort(this.sortCitiesByName.bind(this));
+  sortCitiesByColor(a, b) {
+    if (a.color === b.color) {
+      return 0;
+    }
+    return (a.color < b.color) ? -1 : +1;
+  }
+
+  sortCitiesByBalls(a, b) {
+    if (a.balls.filter(v => v === 'red' || v === 'yellow').length === b.balls.filter(v => v === 'red' || v === 'yellow').length) {
+      return 0;
+    }
+    if (a.balls.filter(v => v === 'red' || v === 'yellow').length > b.balls.filter(v => v === 'red' || v === 'yellow').length) {
+      return +1;
+    }
+    return -1;
+  }
+
+  sortCitiesByRedBalls(a, b) {
+    if (a.balls.filter(v => v === 'red').length === b.balls.filter(v => v === 'red').length) {
+      return 0;
+    }
+    if (a.balls.filter(v => v === 'red').length > b.balls.filter(v => v === 'red').length) {
+      return +1;
+    }
+    return -1;
+  }
+
+  sortCitiesByYellowBalls(a, b) {
+    if (a.balls.filter(v => v === 'yellow').length === b.balls.filter(v => v === 'yellow').length) {
+      return 0;
+    }
+    if (a.balls.filter(v => v === 'yellow').length > b.balls.filter(v => v === 'yellow').length) {
+      return +1;
+    }
+    return -1;
+  }
+
+  sortCitiesByRisk(a, b) {
+    return 0;
+  }
+
+  async updateDerivedArrays() {
+    // calculate risks by city
+    for (let jj = 0; jj < this.cities.length; jj++) {
+      const city = this.cities[jj];
+
+      if (city.color === 'safehaven') {
+        continue;
+      }
+
+      const balls = [];
+      let hasNonBlack = false;
+      for (let i = 0; i < city.extantCount; i++) {
+        const oneInfectionArePossibleWithinXTurns = await this.cityIsWithinInfectionHorizon(city.name, 1, i + 1);
+        const twoInfectionsArePossibleWithinXTurns = await this.cityIsWithinInfectionHorizon(city.name, 2, i + 1);
+        if (oneInfectionArePossibleWithinXTurns === 1) {
+          balls.push('red');
+          hasNonBlack = true;
+        } else if (oneInfectionArePossibleWithinXTurns === 0 && twoInfectionsArePossibleWithinXTurns === 1) {
+          balls.push('yellow');
+          hasNonBlack = true;
+        } else {
+          balls.push('black');
+        }
+      }
+
+      if (hasNonBlack) {
+        console.log(city.name, city.balls);
+      }
+
+      city.balls = balls;
+    }
+
+    this.cities.sort((a, b) => {
+      let sort1 = 0;
+      switch (this.sortCriteria1) {
+        case 'name': sort1 = this.sortCitiesByName(a, b); break;
+        case 'color': sort1 = this.sortCitiesByColor(a, b); break;
+        case 'balls': sort1 = this.sortCitiesByBalls(a, b); break;
+        case 'redballs': sort1 = this.sortCitiesByRedBalls(a, b); break;
+        case 'yellowballs': sort1 = this.sortCitiesByYellowBalls(a, b); break;
+      }
+
+      if (sort1 === 0) {
+        let sort2 = 0;
+        switch (this.sortCriteria2) {
+          case 'name': sort2 = this.sortCitiesByName(a, b); break;
+          case 'color': sort2 = this.sortCitiesByColor(a, b); break;
+          case 'balls': sort2 = this.sortCitiesByBalls(a, b); break;
+          case 'redballs': sort1 = this.sortCitiesByRedBalls(a, b); break;
+          case 'yellowballs': sort1 = this.sortCitiesByYellowBalls(a, b); break;
+        }
+
+        if (this.ascDesc2 === 'descending') {
+          sort2 *= -1;
+        }
+
+        return sort2;
+      }
+
+      if (this.ascDesc1 === 'descending') {
+        sort1 *= -1;
+      }
+      return sort1;
+    });
+
     this.nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
     this.nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
 
@@ -703,6 +827,11 @@ export class GameComponent implements OnInit {
     }
     return 0;
   }
+
+  async recomputeAndUpdate() {
+    this.recomputeBags('recomputeAndUpdate');
+    await this.updateDerivedArrays();
+}
 
   async toggleShowHideRounds() {
     this.hideRoundColumns = !this.hideRoundColumns;

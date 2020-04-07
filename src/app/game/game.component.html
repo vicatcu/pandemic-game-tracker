@@ -43,6 +43,47 @@
           {{ hideRoundColumns ? 'Show Rounds' : 'Hide Rounds' }}
         </ion-button>
       </div>
+
+      <div class="infection-rate">
+        <span class="label">Sort By:</span>
+        <ng-select [items]="sortCriteria"
+          [clearable]="false"
+          class="sorting-criteria"
+          bindLabel="label"
+          bindValue="value"
+          (change)="recomputeAndUpdate()"
+          [(ngModel)]="sortCriteria1">
+        </ng-select>
+        <ng-select [items]="ascendingDescending"
+          [clearable]="false"
+          (change)="recomputeAndUpdate()"
+          class="asc-desc"
+          bindLabel="label"
+          bindValue="value"
+          [(ngModel)]="ascDesc1">
+        </ng-select>
+
+        <span class="label">Then By:</span>
+        <ng-select [items]="sortCriteria"
+          class="sorting-criteria"
+          (change)="recomputeAndUpdate()"
+          (clear)="recomputeAndUpdate()"
+          [class.with-clearable]="!sortCriteria2"
+          [class.with-clearable-off]="sortCriteria2"
+          bindLabel="label"
+          bindValue="value"
+          [(ngModel)]="sortCriteria2">
+        </ng-select>
+        <ng-select [items]="ascendingDescending"
+          [clearable]="false"
+          class="asc-desc"
+          (change)="recomputeAndUpdate()"
+          bindLabel="label"
+          bindValue="value"
+          [(ngModel)]="ascDesc2">
+        </ng-select>
+      </div>
+
     </div>
   </ion-row>
 
@@ -123,11 +164,16 @@
                 </ng-container> -->
                 <span>
                   <ng-container *ngFor="let num of integers; let i = index;">
-                    <ion-icon class="radio-ball" *ngIf="i < city.extantCount"
+                    <!-- <ion-icon class="radio-ball" *ngIf="i < city.extantCount"
                       [class.red]="cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 1"
                       [class.yellow]="cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 0 && cityIsWithinInfectionHorizon(city.name, 2, i + 1) === 1"
                       [class.black]="cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 0 && cityIsWithinInfectionHorizon(city.name, 2, i + 1) === 0"
-                      [name]="(cityIsWithinInfectionHorizon(city.name, 2, i + 1) === 0 && cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 0) ? 'radio-button-off' : 'radio-button-on'"></ion-icon>
+                      [name]="(cityIsWithinInfectionHorizon(city.name, 1, i + 1) === 0 && cityIsWithinInfectionHorizon(city.name, 2, i + 1) === 0) ? 'radio-button-off' : 'radio-button-on'"></ion-icon> -->
+                    <ion-icon class="radio-ball" *ngIf="i < city.extantCount"
+                      [class.red]="city.balls[i] === 'red'"
+                      [class.yellow]="city.balls[i] === 'yellow'"
+                      [class.black]="city.balls[i] === 'black'"
+                      [name]="((city.balls[i] !== 'red') && (city.balls[i] !== 'yellow')) ? 'radio-button-off' : 'radio-button-on'"></ion-icon>
                   </ng-container>
                 </span>
             </div>

@@ -143,6 +143,12 @@
     top: 5px;
     font-size: 26px;
   }
+
+  ng-select {
+    display: inline-block;
+    position: relative;
+    top: 7px;
+  }
 }
 
 .radio-ball {
@@ -169,4 +175,23 @@
   text-align: center;
   position: relative;
   top: 0px;
+}
+
+.sorting-criteria {
+  width: 130px;
+  text-align: left;
+}
+
+.asc-desc {
+  width: 48px;
+  text-align: left;
+}
+
+.with-clearable {
+  position: relative;
+  top: 2px!important;
+}
+.with-clearable-off {
+  position: relative;
+  top: 8px!important;
 }
