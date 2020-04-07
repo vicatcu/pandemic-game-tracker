@@ -34,6 +34,15 @@
           <ion-icon slot="icon-only" name="add"></ion-icon>
         </ion-button>
       </div>
+
+      <div class="show-rounds">
+        <ion-button color="primary" expand="block"
+          (click)="toggleShowHideRounds()"
+          class="select-line-button-tweak button-margin float-button"
+          fill="outline">
+          {{ hideRoundColumns ? 'Show Rounds' : 'Hide Rounds' }}
+        </ion-button>
+      </div>
     </div>
   </ion-row>
 

@@ -127,7 +127,7 @@
   line-height: 23px;
   text-align: center;
   position: relative;
-  top: -3px;
+  top: -5px;
 
   .label {
     color: green;
@@ -160,4 +160,13 @@
 
 .black {
   color: black;
+}
+
+.show-rounds {
+  display: inline-block;
+  height: 23px;
+  line-height: 23px;
+  text-align: center;
+  position: relative;
+  top: 0px;
 }

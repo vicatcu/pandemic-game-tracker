@@ -4,6 +4,11 @@ import { Storage } from '@ionic/storage';
 
 import {v4 as uuid } from 'uuid';
 
+// TODO: Implement Show / Hide Round Discard Detail
+// TODO: Implement Sort By A then B
+// TODO: Implement Risk Statistics
+// TODO: Make City Display support multiple columns
+
 @Component({
   selector: 'app-game',
   templateUrl: './game.component.html',
@@ -34,7 +39,7 @@ export class GameComponent implements OnInit {
     return v;
   });
   nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
-  nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
+  nonSafehavenCitiesLeadingBlank: any = this.withLeadingBlank(this.nonSafehavenCities);
   selectedCityId;
   selectedInfectionId;
 
@@ -46,6 +51,8 @@ export class GameComponent implements OnInit {
   handledEpidemic = true;
   atLeastOneEpidemic = false;
   unwoundedRounds = [];
+
+  hideRoundColumns = true;
 
   constructor(
     private alertCtrl: AlertController,
@@ -538,7 +545,7 @@ export class GameComponent implements OnInit {
     this.nonSafehavenCities = this.cities.filter(v => v.color !== 'safehaven');
     this.nonSafehavenCitiesLeadingBlank = this.withLeadingBlank(this.nonSafehavenCities);
 
-    this.topDeckHistoryLeadingBlank = this.withLeadingBlank(this.topDeckHistory);
+    this.topDeckHistoryLeadingBlank = this.hideRoundColumns ? [''] : this.withLeadingBlank(this.topDeckHistory);
   }
 
   totalCardsInDeck() {
@@ -695,5 +702,11 @@ export class GameComponent implements OnInit {
       return 1;
     }
     return 0;
+  }
+
+  async toggleShowHideRounds() {
+    this.hideRoundColumns = !this.hideRoundColumns;
+    await this.updateDerivedArrays();
+    this.detectChanges();
   }
 }
