@@ -433,7 +433,14 @@ export class GameComponent implements OnInit {
   async deleteInfectionCard() {
     const alert = await this.alertCtrl.create({
       header: 'Delete City',
-      message: `Are you sure you want Delete the row for "${this.selectedInfectionId}"?`,
+      message: `Are you sure you want Delete an Infect City card?`,
+      inputs: [
+        {
+          type: 'text',
+          name: 'cityName',
+          placeholder: 'Enter a city name...'
+        }
+      ],
       buttons: [
         {
           text: 'Cancel',
@@ -443,13 +450,18 @@ export class GameComponent implements OnInit {
           }
         }, {
           text: 'Yes',
-          handler: async () => {
+          handler: (data) => {
+            const cityIsValid = this.cities.find(v => v.name === data.cityName);
+            if (cityIsValid) {
+              this.cities = this.cities.filter(v => v.name !== data.cityName);
 
-            this.cities = this.cities.filter(v => v.name !== this.selectedInfectionId);
-
-            this.updateDerivedArrays();
-            this.recomputeBags('deleteInfectionCard');
-            await this.save();
+              this.updateDerivedArrays();
+              this.recomputeBags('deleteInfectionCard');
+              this.save();
+              return true;
+            } else {
+              return false;
+            }
           }
         }
       ]
