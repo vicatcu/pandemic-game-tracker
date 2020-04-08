@@ -1,3 +1,5 @@
+Started from https://github.com/paulsutherland/Polyonic as a seed
+
 # Polyonic
 ## The ultimate "Universal Web App" 
 
