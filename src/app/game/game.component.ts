@@ -838,4 +838,14 @@ export class GameComponent implements OnInit {
     await this.updateDerivedArrays();
     this.detectChanges();
   }
+
+  cardsInRound(roundNum) {
+    roundNum -= 1;
+    if (!this.topDeckHistory || !Array.isArray(this.topDeckHistory[roundNum])) {
+      return 0;
+    }
+    return this.topDeckHistory[roundNum].reduce((t, v) => {
+      return t + v.count;
+    }, 0);
+  }
 }
